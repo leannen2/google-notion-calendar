@@ -20,9 +20,30 @@ async function getNotionClient() {
   }
 }
 
+async function getDatabases() {
+  const notion = await getNotionClient();
+
+  try {
+    const response = await notion.search({
+      filter: {
+        value: "database",
+        property: "object",
+      },
+      sort: {
+        direction: "ascending",
+        timestamp: "last_edited_time",
+      },
+    });
+    return response;
+  } catch (err) {
+    console.log("Error occurred while fetching all databases.");
+    reject(err);
+  }
+}
+
 async function getDatabase() {
   const notion = await getNotionClient();
-  const databaseId = "f07902473558443c8c07e2d86fa47b6";
+  const databaseId = "f0790247-3558-443c-8c07-e2d86fa47b69";
 
   try {
     var response = await notion.databases.retrieve({ database_id: databaseId });
@@ -65,12 +86,26 @@ router.get("/pages", async (req, res) => {
   }
 });
 
+router.get("/databases", async (req, res) => {
+  try {
+    response = await getDatabases();
+    formatted = response.results.map((result) => ({
+      id: result.id,
+      title: result.title[0].plain_text,
+    }));
+    console.log(formatted);
+    res.json(formatted);
+  } catch (err) {
+    res.status(500).send("Fetching databases failed");
+  }
+});
+
 router.get("/database/:id", async (req, res) => {
   try {
     response = await getDatabase();
     res.json(response);
   } catch (err) {
-    res.status(err.status).send(err.body);
+    res.status(500).send("Fetching database failed");
   }
 });
 
